@@ -115,6 +115,8 @@ func buildRoomPacket() ([]byte, int) {
 	return builder, offset - 1
 }
 
+//TODO Create a room packet function with automatic offset
+
 /**
 So the room packet should look something like this:
 1 byte - number of rooms we are sending (max 255)
