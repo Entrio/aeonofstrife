@@ -9,6 +9,7 @@ const (
 	TILE_TYPE_WALL = uint8(iota)
 	TILE_TYPE_DIRT
 	TILE_TYPE_PORTAL
+	TILE_TYPE_AIR
 )
 
 type Vector2 struct {

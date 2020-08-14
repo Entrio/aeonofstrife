@@ -13,9 +13,11 @@ func sendRoomDataToConnection(connection *Connection) {
 	fmt.Println(fmt.Sprintf("Sending rooms: %d", len(ServerInstance.roomList)))
 	// return a msg of how many rooms
 
-	data, length := buildRoomPacket()
-
-	sendMessageToConnection(connection, MSG_ROOM_COUNT_RESPONSE, data[:length])
+	/*
+		for _, room := range ServerInstance.roomList {
+			sendMessageToConnection(connection, MSG_ROOM_COUNT_RESPONSE, room.getRoomPacket())
+		}
+	*/
 
 	/*
 		for _, r := range ServerInstance.roomList {
@@ -138,7 +140,76 @@ so if we take a 10x10 room and send 0 tiles, all tiles are walkable (and the gam
 ... 1 byte - positionX uint8 (max 255)
 ... 1 byte - positionY uint8 (max 255)
 
+1 byte - room exit position X
+1 byte - room exit position Y
+1 byte - room entry position X
+1 byte - room entry position Y
+
 and that's it, simple right. Maximum packet size: 325,933 bytes (can fit 3 rooms int 1 mb buffer)
 16 + 1 + 255 + 2 + 65535 + 1 + 1 + 2 + (65025 * 4)
 
 */
+
+func (room *Room) getRoomPacket() []byte {
+	offset := 0
+	ba := make([]byte, 0)
+	roomID := []byte(room.ID.String())
+	ba = append(ba, roomID...)
+	offset += len(roomID)
+
+	roomNameData := []byte(room.Name)
+	var roomNameLength byte
+	roomNameLength = uint8(len(room.Name))
+	ba = append(ba, roomNameLength)
+	offset++
+	ba = append(ba, roomNameData...)
+	offset += len(roomNameData)
+
+	roomDescLength := make([]byte, 2)
+	roomDescData := make([]byte, len(room.Description))
+	binary.LittleEndian.PutUint16(roomDescLength, uint16(len(room.Description)))
+	ba = append(ba, roomDescLength...)
+	offset += 2
+	ba = append(ba, roomDescData...)
+	offset += len(room.Description)
+
+	var roomWidth byte
+	roomWidth = uint8(room.Width)
+	ba = append(ba, roomWidth)
+	offset++
+
+	var roomHeight byte
+	roomHeight = uint8(room.Height)
+	ba = append(ba, roomHeight)
+	offset++
+
+	tiles := make([]Tile, 0)
+	for _, tile := range room.TileList {
+		if tile.Type != TILE_TYPE_DIRT {
+			tiles = append(tiles, tile)
+		}
+	}
+
+	b := make([]byte, 2)
+	binary.LittleEndian.PutUint16(b, uint16(len(tiles)))
+	ba = append(ba, b...)
+	offset += 2
+
+	for _, tile := range tiles {
+		ba = append(ba, byte(tile.Type))
+		offset++
+		if tile.IsPassable {
+			ba = append(ba, 1)
+		} else {
+			ba = append(ba, 0)
+		}
+		offset++
+
+		ba = append(ba, byte(tile.Position.X))
+		offset++
+		ba = append(ba, byte(tile.Position.Y))
+		offset++
+	}
+
+	return ba
+}

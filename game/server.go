@@ -18,12 +18,14 @@ type Server struct {
 	roomList        map[string]*Room
 	ticker          *time.Ticker
 	config          *serverConfig
+	packetHandler   map[PacketType]PacketHandler
 }
 
 type serverConfig struct {
-	ServerName string `json:"server_name"`
-	ServerPort int    `json:"server_port"`
-	RoomData   struct {
+	ServerName      string `json:"server_name"`
+	ServerPort      int    `json:"server_port"`
+	PingConnections bool   `json:"ping_connections"`
+	RoomData        struct {
 		Config struct {
 			MinWidth  int `json:"min_width"`
 			MaxWidth  int `json:"max_width"`
@@ -39,9 +41,14 @@ Get an existing instance of create a new one
 */
 func GetServer() (*Server, error) {
 	if ServerInstance == nil {
+		handlers := make(map[PacketType]PacketHandler)
+
+		handlers[MSG_ROOM_COUNT_REQUEST] = RoomCountHandler{}
+
 		ServerInstance = &Server{
 			connectionsList: make([]*Connection, 0),
 			roomList:        map[string]*Room{},
+			packetHandler:   handlers,
 		}
 	}
 
@@ -71,6 +78,20 @@ func (server *Server) GetPort() int {
 
 func (server *Server) Start() {
 	server.ticker = time.NewTicker(time.Millisecond * 3000)
+
+	go func() {
+		for range server.ticker.C {
+			pkt := NewPacket(MSG_PING_REQUEST)
+
+			for _, c := range server.connectionsList {
+				// game loop
+				if server.config.PingConnections {
+					sendMessageToConnection(c, *pkt)
+				}
+			}
+
+		}
+	}()
 }
 
 func (server *Server) GetName() string {
@@ -117,7 +138,9 @@ func (server *Server) AddConnection(conn net.Conn) *Connection {
 
 	server.connectionsList = append(server.connectionsList, newConnection)
 	go newConnection.listen()
-	sendMessageToConnection(newConnection, MSG_SPECIAL_2, []byte("Welcome to the server"))
+	welcomePacket := NewPacket(MSG_WELCOME)
+	welcomePacket.WriteString("Welcome to the super awesome server This is a server message!")
+	sendMessageToConnection(newConnection, *welcomePacket)
 	return newConnection
 }
 
@@ -206,7 +229,7 @@ func loadServerRooms(datapath string) error {
 
 	if os.IsNotExist(err) {
 
-		for i := 0; i < 1; i++ {
+		for i := 0; i < ServerInstance.config.RoomData.MinRooms; i++ {
 			rand.Seed(time.Now().UnixNano())
 			// Generate 1 room to start with
 			width := rand.Intn(ServerInstance.config.RoomData.Config.MaxWidth-ServerInstance.config.RoomData.Config.MinWidth) + ServerInstance.config.RoomData.Config.MinWidth
@@ -217,10 +240,15 @@ func loadServerRooms(datapath string) error {
 			for x := 0; x < width; x++ {
 				for y := 0; y < height; y++ {
 
-					tt := TILE_TYPE_DIRT
-					pass := true
+					tt := TILE_TYPE_AIR
+					pass := false
 
 					if x == 0 || y == 0 {
+						tt = TILE_TYPE_WALL
+						pass = false
+					}
+
+					if x+1 == width || y+1 == height {
 						tt = TILE_TYPE_WALL
 						pass = false
 					}
