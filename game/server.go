@@ -153,12 +153,12 @@ func checkDirectories(p string) []string {
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		fmt.Println(fmt.Sprintf("Creating config directory: %s", configPath))
-		os.Mkdir(configPath, os.ModeDir)
+		os.Mkdir(configPath, 0777)
 	}
 
 	if _, err := os.Stat(dataPath); os.IsNotExist(err) {
 		fmt.Println(fmt.Sprintf("Creating data directory: %s", dataPath))
-		os.Mkdir(dataPath, os.ModeDir)
+		os.Mkdir(dataPath, 0777)
 	}
 	return []string{
 		configPath,
@@ -178,8 +178,9 @@ func checkServerConfig(configPath string) (*serverConfig, error) {
 
 		// Create default config file...
 		conf := serverConfig{
-			ServerName: "Default MUD server",
-			ServerPort: 1337,
+			ServerName:      "Default MUD server",
+			ServerPort:      1337,
+			PingConnections: false,
 			RoomData: struct {
 				Config struct {
 					MinWidth  int `json:"min_width"`
@@ -200,12 +201,12 @@ func checkServerConfig(configPath string) (*serverConfig, error) {
 					MinHeight: 5,
 					MaxHeight: 100,
 				},
-				MinRooms: 1,
+				MinRooms: 6,
 			},
 		}
 
 		jData, _ := json.MarshalIndent(conf, "", " ")
-		err := ioutil.WriteFile(configFilePath, jData, 0644)
+		err := ioutil.WriteFile(configFilePath, jData, 0666)
 		if err != nil {
 			return nil, err
 		}
