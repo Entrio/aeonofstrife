@@ -117,39 +117,6 @@ func buildRoomPacket() ([]byte, int) {
 	return builder, offset - 1
 }
 
-//TODO Create a room packet function with automatic offset
-
-/**
-So the room packet should look something like this:
-1 byte - number of rooms we are sending (max 255)
-
-36 bytes - UUID
-1 bytes - room name length uint8
-<n> bytes - room string (max of 255 characters in UTF-8 encoding)
-2 bytes - room description length uint16 (max 65535 characters in UTF-8 encoding)
-<n> bytes - room description string (max 65535 characters in UTF-8 encoding)
-1 byte - room width uint8 (max 255)
-1 byte - room height uint8 (max 255)
-
-At this stage it gets interesting, we assume that all tiles are walkable and are made of dirt except the ones we are sending
-so if we take a 10x10 room and send 0 tiles, all tiles are walkable (and the game will break)
-
-2 bytes - how many tiles we are sending uint16 (max 65535)
-... 1 byte - tile type uint8 (max 255)
-... 1 byte - passable uint8 (boolean)
-... 1 byte - positionX uint8 (max 255)
-... 1 byte - positionY uint8 (max 255)
-
-1 byte - room exit position X
-1 byte - room exit position Y
-1 byte - room entry position X
-1 byte - room entry position Y
-
-and that's it, simple right. Maximum packet size: 325,933 bytes (can fit 3 rooms int 1 mb buffer)
-16 + 1 + 255 + 2 + 65535 + 1 + 1 + 2 + (65025 * 4)
-
-*/
-
 func (room *Room) getRoomPacket() []byte {
 	offset := 0
 	ba := make([]byte, 0)
@@ -213,3 +180,43 @@ func (room *Room) getRoomPacket() []byte {
 
 	return ba
 }
+
+//TODO Create a room packet function with automatic offset
+
+/**
+So the room packet should look something like this:
+1 byte - number of rooms we are sending (max 255)
+
+36 bytes - UUID
+1 bytes - room name length uint8
+<n> bytes - room string (max of 255 characters in UTF-8 encoding)
+2 bytes - room description length uint16 (max 65535 characters in UTF-8 encoding)
+<n> bytes - room description string (max 65535 characters in UTF-8 encoding)
+1 byte - room width uint8 (max 255)
+1 byte - room height uint8 (max 255)
+
+At this stage it gets interesting, we assume that all tiles are walkable and are made of dirt except the ones we are sending
+so if we take a 10x10 room and send 0 tiles, all tiles are walkable (and the game will break)
+
+2 bytes - how many tiles we are sending uint16 (max 65535)
+... 1 byte - tile type uint8 (max 255)
+... 1 byte - passable uint8 (boolean)
+... 1 byte - positionX uint8 (max 255)
+... 1 byte - positionY uint8 (max 255)
+
+1 byte - room exit position X
+1 byte - room exit position Y
+1 byte - room entry position X
+1 byte - room entry position Y
+
+and that's it, simple right. Maximum packet size: 325,933 bytes (can fit 3 rooms int 1 mb buffer)
+16 + 1 + 255 + 2 + 65535 + 1 + 1 + 2 + (65025 * 4)
+
+
+*****************************
+ROOM UPDATE PAYLOAD STRUCTURE
+*****************************
+1 byte - update type (0 - tiles)
+2 bytes - uint16 number fo tiles that we will be sending
+
+*/
