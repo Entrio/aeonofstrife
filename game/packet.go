@@ -53,6 +53,15 @@ func (packet *Packet) GetBytes() []byte {
 	return append(pSize, packet.buffer...)
 }
 
+// Read UUID 16 byte long string
+func (packet *Packet) ReadUUID() string {
+	length := packet.ReadUint16()
+	if length != 36 {
+		panic(fmt.Sprintf("Wrong UUID length! Expecting 36, got %d", length))
+	}
+	return string(packet.ReadBytes(uint32(length)))
+}
+
 /*
 Set bytes for current packet. This is used when packets are fragmented.
 */
@@ -71,6 +80,9 @@ func (packet *Packet) Length() uint32 {
 Get the number of unread bytes in the packet buffer
 */
 func (packet *Packet) UnreadLength() uint32 {
+	if packet.cursor >= packet.Length() {
+		return 0
+	}
 	return packet.Length() - packet.cursor
 }
 
@@ -99,21 +111,64 @@ func (packet *Packet) ReadUint16() uint16 {
 }
 
 /**
+Read a 16 bit unsigned integer and return it as a signed 32 (or 64 depending on the system) bit integer
+*/
+func (packet *Packet) ReadUint16AsInt() int {
+	return int(packet.ReadUint16())
+}
+
+/**
+Read an 8 bit unsigned integer. This is 1 bytes
+*/
+func (packet *Packet) ReadUint8() uint8 {
+	val := byte(0)
+	val = packet.buffer[packet.cursor : packet.cursor+1][0]
+	packet.cursor += 1
+	return val
+}
+
+/**
 Read a certain amount of bytes from the buffer.
 */
-func (packet *Packet) ReadBytes(length uint32) []byte {
-	if packet.Length() <= (packet.cursor + length) {
+func (packet *Packet) ReadBytes(lenToRead uint32) []byte {
+
+	// Check to see if we are not reading past the buffer lenToRead
+
+	if packet.Length() >= (packet.cursor + lenToRead) {
 		// we got something
-		data := packet.buffer[packet.cursor : packet.cursor+length]
+		data := packet.buffer[packet.cursor : packet.cursor+lenToRead]
 
 		// move the cursor
-		packet.cursor += length
+		packet.cursor += lenToRead
 
 		return data
 	} else {
 		// TODO: Panic or some sort of error
-		panic(fmt.Errorf("could not read bytes from packet as we are outside of the index. Packet length: %d, reading %d", packet.Length(), length))
+		panic(
+			fmt.Errorf(
+				"Attempted to read outisde of slice bounds. Packet length: %d, reading %d bytes. Read index from %d - %d\nUnread: %d",
+				packet.Length(), lenToRead, packet.cursor, packet.cursor+lenToRead, packet.UnreadLength(),
+			),
+		)
 	}
+}
+
+/**
+Read a single byte from the packet stream
+*/
+func (packet *Packet) ReadByte() byte {
+	return packet.ReadBytes(1)[0]
+}
+
+/**
+Read boolean value
+*/
+func (packet *Packet) ReadBoolean() bool {
+	val := packet.ReadBytes(1)[0]
+	if val == 1 {
+		return true
+	}
+	return false
 }
 
 /**

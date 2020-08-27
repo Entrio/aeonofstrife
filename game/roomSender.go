@@ -217,6 +217,11 @@ and that's it, simple right. Maximum packet size: 325,933 bytes (can fit 3 rooms
 ROOM UPDATE PAYLOAD STRUCTURE
 *****************************
 1 byte - update type (0 - tiles)
+16 bytes - string - room ID
 2 bytes - uint16 number fo tiles that we will be sending
+... 1 byte - tile type uint8 (max 255)
+... 1 byte - is passable byte
+... 1 byte - positionX uint8 (max 255)
+... 1 byte - positionY uint8 (max 255)
 
 */

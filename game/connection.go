@@ -1,7 +1,6 @@
 package game
 
 import (
-	"encoding/binary"
 	"fmt"
 	"net"
 	"time"
@@ -60,7 +59,16 @@ func handleData(data []byte, receivedData *Packet) bool {
 		//TODO: Maybe look into goroutine
 		newPaket := NewUnknownPacket(packetBytes)
 		newPaket.Connection = receivedData.Connection
-		ServerInstance.packetHandler[newPaket.GetMessageType()].handle(newPaket)
+		fmt.Println(fmt.Sprintf("Total handlers: %d", len(ServerInstance.packetHandler)))
+
+		t := newPaket.GetMessageType()
+		_, ok := ServerInstance.packetHandler[t]
+
+		if !ok {
+			fmt.Println(fmt.Sprintf("There is no handler registered for packet type %d", t))
+		}
+
+		ServerInstance.packetHandler[t].handle(newPaket)
 
 		packetLength = 0
 		if receivedData.UnreadLength() >= 4 {
@@ -93,36 +101,4 @@ func (connection *Connection) sendBytes(data []byte) {
 }
 func (connection *Connection) sendString(data string) {
 	connection.sendBytes([]byte(data))
-}
-func processMessage(connection *Connection, data []byte, l int) {
-	// Determine msg type
-	// Construct a packet
-	msgType := PacketType(binary.LittleEndian.Uint16(data[:2]))
-
-	switch msgType {
-	case MSG_PING_RESPONSE:
-		fmt.Println("GOT A PING RESPONSE")
-		break
-	case MSG_ROOM_COUNT_REQUEST:
-		sendRoomDataToConnection(connection)
-	case MSG_ROOM_UPDATE_NAME:
-		processRoomUpdateName(connection, data[2:l])
-		break
-	default:
-		break
-	}
-}
-func processRoomUpdateName(connection *Connection, data []byte) {
-	roomID := string(data[:36])
-	roomName := string(data[36:])
-
-	r := ServerInstance.FindRoom(roomID)
-	if r == nil {
-		fmt.Println("No such room found!")
-		return
-	}
-
-	r.Name = roomName
-
-	fmt.Println(fmt.Sprintf("Updating room (%s) name to: %s", roomID, roomName))
 }

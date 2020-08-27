@@ -43,12 +43,17 @@ func GetServer() (*Server, error) {
 	if ServerInstance == nil {
 		handlers := make(map[PacketType]PacketHandler)
 
+		handlers[MSG_UPDATE_ROOM_PAYLOAD] = RoomUpdateHandler{}
 		handlers[MSG_ROOM_COUNT_REQUEST] = RoomCountHandler{}
 
 		ServerInstance = &Server{
 			connectionsList: make([]*Connection, 0),
 			roomList:        map[string]*Room{},
 			packetHandler:   handlers,
+		}
+
+		for key, value := range handlers {
+			fmt.Println("Key:", key, "Value:", value)
 		}
 	}
 
