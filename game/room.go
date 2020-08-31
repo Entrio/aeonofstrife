@@ -30,7 +30,6 @@ type Room struct {
 	Width          int            `json:"width"`
 	Height         int            `json:"height"`
 	Tiles          [][]Tile       `json:"-"`
-	TileList       []Tile         `json:"tile_list"`
 	Entry          RoomEntryPoint `json:"entry"`
 	Exit           RoomExitPoint  `json:"exit"`
 	IsStartingRoom bool           `json:"is_starting_room"`
@@ -72,4 +71,15 @@ func NewRoom(width, height int) *Room {
 		},
 		IsStartingRoom: false,
 	}
+}
+
+func (room *Room) UpdateTile(x, y uint8, tile Tile) *Room {
+	fmt.Println(
+		fmt.Sprintf(
+			"Updating tile for room %s: %d",
+			room.ID, tile.Type,
+		),
+	)
+	room.Tiles[x][y] = tile
+	return room
 }

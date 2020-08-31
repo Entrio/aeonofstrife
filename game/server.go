@@ -107,11 +107,11 @@ func (server *Server) GetName() string {
 Find a room based on UUID string
 */
 func (server *Server) FindRoom(uuid string) *Room {
-	for i, room := range server.roomList {
-		if room.ID.String() == uuid {
-			return server.roomList[i]
-		}
+
+	if r, found := server.roomList[uuid]; found {
+		return r
 	}
+
 	return nil
 }
 
@@ -266,11 +266,9 @@ func loadServerRooms(datapath string) error {
 					}
 
 					newRoom.Tiles[x][y] = t
-					newRoom.TileList = append(newRoom.TileList, t)
 				}
 			}
 			ServerInstance.roomList[newRoom.ID.String()] = newRoom
-			time.Sleep(time.Millisecond * 250)
 		}
 	}
 	return nil

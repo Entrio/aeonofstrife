@@ -77,9 +77,9 @@ func buildRoomPacket() ([]byte, int) {
 		offset++
 
 		tiles := make([]Tile, 0)
-		for _, tile := range room.TileList {
-			if tile.Type != TILE_TYPE_DIRT {
-				tiles = append(tiles, tile)
+		for x, b := range room.Tiles {
+			for y, _ := range b {
+				tiles = append(tiles, room.Tiles[x][y])
 			}
 		}
 
@@ -151,9 +151,9 @@ func (room *Room) getRoomPacket() []byte {
 	offset++
 
 	tiles := make([]Tile, 0)
-	for _, tile := range room.TileList {
-		if tile.Type != TILE_TYPE_DIRT {
-			tiles = append(tiles, tile)
+	for x, b := range room.Tiles {
+		for y, _ := range b {
+			tiles = append(tiles, room.Tiles[x][y])
 		}
 	}
 

@@ -41,6 +41,17 @@ func (r RoomUpdateHandler) handle(packet *Packet) {
 		_posX := packet.ReadUint8()
 		_posY := packet.ReadUint8()
 
+		tile := Tile{
+			Type:       _tileType,
+			IsPassable: _isPassable,
+			Position: Vector2{
+				X: int(_posX),
+				Y: int(_posY),
+			},
+		}
+
+		room.UpdateTile(_posX, _posY, tile)
+
 		fmt.Println(
 			fmt.Sprintf(
 				"Tile: %d, pass: %t X: %d, Y: %d",
