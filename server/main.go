@@ -10,6 +10,10 @@ var (
 	s *game.Server
 )
 
+/**
+VERSION pre-alpha
+@author Alexander Titarenko <westal@gmail.com>
+*/
 func main() {
 	server, err := game.GetServer()
 	if err != nil {
