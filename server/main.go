@@ -11,7 +11,7 @@ var (
 )
 
 /**
-VERSION pre-alpha
+VERSION pre-alpha 0.1
 @author Alexander Titarenko <westal@gmail.com>
 */
 func main() {
