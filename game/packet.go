@@ -258,7 +258,7 @@ func (packet *Packet) WriteRoomData(room *Room) {
 
 	tiles := make([]Tile, 0)
 	for x, b := range room.Tiles {
-		for y, _ := range b {
+		for y := range b {
 			tiles = append(tiles, room.Tiles[x][y])
 		}
 	}
