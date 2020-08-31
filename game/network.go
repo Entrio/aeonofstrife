@@ -3,17 +3,17 @@ package game
 type PacketType uint16
 
 const (
-	MSG_NULL_IOTA PacketType = PacketType(iota)
-	MSG_PING_REQUEST
-	MSG_PING_RESPONSE
-	MSG_WELCOME
-	MSG_SPECIAL_1
-	MSG_SPECIAL_2
-	MSG_ROOM_COUNT_REQUEST
-	MSG_ROOM_COUNT_RESPONSE
-	MSG_ROOM_UPDATE_NAME        PacketType = 1000
-	MSG_UPDATE_ROOM_PAYLOAD     PacketType = 1001
-	MSG_UPDATE_ROOM_PAYLOAD_ACK PacketType = 1002
-	MSG_ROOM_UPDATE_STATUS      PacketType = 1003
-	MSG_ROOM_MISC_UPDATE        PacketType = 1004
+	MsgNullIota = PacketType(iota)
+	MsgPingRequest
+	MsgPingResponse
+	MsgWelcome
+	MsgSpecial1
+	MsgSpecial2
+	MsgRoomCountRequest
+	MsgRoomCountResponse
+	MsgRoomUpdateName       PacketType = 1000
+	MsgUpdateRoomPayload    PacketType = 1001
+	MsgUpdateRoomPayloadAck PacketType = 1002
+	MsgRoomUpdateStatus     PacketType = 1003
+	MsgRoomMiscUpdate       PacketType = 1004
 )

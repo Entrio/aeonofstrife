@@ -15,7 +15,7 @@ func (r RoomCountHandler) handle(packet *Packet) {
 
 	for _, v := range ServerInstance.roomList {
 		fmt.Println(fmt.Sprintf("Sending room %s upstream", v.ID))
-		msg := NewPacket(MSG_ROOM_COUNT_RESPONSE)
+		msg := NewPacket(MsgRoomCountResponse)
 		msg.WriteRoomData(v)
 		sendMessageToConnection(packet.Connection, *msg)
 	}

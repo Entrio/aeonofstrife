@@ -27,14 +27,14 @@ Create a new packet with just bytes
 func NewUnknownPacket(data []byte) *Packet {
 
 	return &Packet{
-		Type:   MSG_NULL_IOTA,
+		Type:   MsgNullIota,
 		buffer: data,
 		cursor: 0,
 	}
 }
 
 func (packet *Packet) GetMessageType() PacketType {
-	if packet.Type == MSG_NULL_IOTA {
+	if packet.Type == MsgNullIota {
 		pt := PacketType(packet.ReadUint16())
 
 		return pt

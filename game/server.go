@@ -43,8 +43,8 @@ func GetServer() (*Server, error) {
 	if ServerInstance == nil {
 		handlers := make(map[PacketType]PacketHandler)
 
-		handlers[MSG_UPDATE_ROOM_PAYLOAD] = RoomUpdateHandler{}
-		handlers[MSG_ROOM_COUNT_REQUEST] = RoomCountHandler{}
+		handlers[MsgUpdateRoomPayload] = RoomUpdateHandler{}
+		handlers[MsgRoomCountRequest] = RoomCountHandler{}
 
 		ServerInstance = &Server{
 			connectionsList: make([]*Connection, 0),
@@ -86,7 +86,7 @@ func (server *Server) Start() {
 
 	go func() {
 		for range server.ticker.C {
-			pkt := NewPacket(MSG_PING_REQUEST)
+			pkt := NewPacket(MsgPingRequest)
 
 			for _, c := range server.connectionsList {
 				// game loop
@@ -143,7 +143,7 @@ func (server *Server) AddConnection(conn net.Conn) *Connection {
 
 	server.connectionsList = append(server.connectionsList, newConnection)
 	go newConnection.listen()
-	welcomePacket := NewPacket(MSG_WELCOME)
+	welcomePacket := NewPacket(MsgWelcome)
 	welcomePacket.WriteString("Welcome to the super awesome server This is a server message!")
 	sendMessageToConnection(newConnection, *welcomePacket)
 	return newConnection
