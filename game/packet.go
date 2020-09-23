@@ -202,11 +202,12 @@ func (packet *Packet) WriteByte(data byte) {
 }
 
 /**
-Write a byte to teh buffer. This method does conversion and checking automatically.
+Write a byte to the buffer. This method does conversion and checking automatically.
+Max value: 255
 */
 func (packet *Packet) WriteIntByte(data int) *Packet {
 	if data > 255 {
-		panic(fmt.Errorf("error while converting inot to byte. WriteIntByte only supports value up to 255"))
+		panic(fmt.Errorf("error while converting int to byte. WriteIntByte only supports value up to 255"))
 	}
 
 	packet.WriteByte(byte(data))

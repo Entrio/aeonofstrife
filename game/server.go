@@ -1,6 +1,7 @@
 package game
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -229,13 +230,14 @@ func checkServerConfig(configPath string) (*serverConfig, error) {
 	}
 }
 
-func loadServerRooms(datapath string) error {
-	roomFilePath := path.Join(datapath, "rooms.blob")
+func loadServerRooms(dataPath string) error {
+	roomFilePath := path.Join(dataPath, "rooms.blob")
 	_, err := os.Stat(roomFilePath)
 
 	if os.IsNotExist(err) {
 
 		for i := 0; i < ServerInstance.config.RoomData.MinRooms; i++ {
+			time.Sleep(time.Millisecond * 250)
 			rand.Seed(time.Now().UnixNano())
 			// Generate 1 room to start with
 			width := rand.Intn(ServerInstance.config.RoomData.Config.MaxWidth-ServerInstance.config.RoomData.Config.MinWidth) + ServerInstance.config.RoomData.Config.MinWidth
@@ -270,6 +272,58 @@ func loadServerRooms(datapath string) error {
 			}
 			ServerInstance.roomList[newRoom.ID.String()] = newRoom
 		}
+		go saveServerRooms(dataPath)
 	}
 	return nil
+}
+
+/**
+Room structure:
+uint16 number of rooms
+.... cycle of rooms
+36 bytes - room uuid
+uint16 - number of bytes used for description (max 65535)
+.. <n> bytes - description
+byte - 1 byte used to indicate if room is active or not
+*/
+func saveServerRooms(dataPath string) error {
+	roomFilePath := path.Join(dataPath, "rooms.blob")
+	_, err := os.Stat(roomFilePath)
+
+	if os.IsNotExist(err) {
+		// no room index
+		buffer := make([]byte, 0)
+
+		tBuffer := make([]byte, 2)
+		binary.LittleEndian.PutUint16(tBuffer, uint16(len(ServerInstance.roomList)))
+
+		buffer = append(buffer, tBuffer...)
+
+		for _, v := range ServerInstance.roomList {
+			buffer = append(buffer, []byte(v.ID.String())...)
+
+			dBuffer := make([]byte, 2)
+			binary.LittleEndian.PutUint16(dBuffer, uint16(len(v.Description)))
+			buffer = append(buffer, dBuffer...)
+			buffer = append(buffer, []byte(v.Description)...)
+
+			if v.isActive {
+				buffer = append(buffer, 0)
+			} else {
+				buffer = append(buffer, 1)
+			}
+		}
+		err := ioutil.WriteFile(roomFilePath, buffer, 0644)
+		check(err)
+
+	} else {
+		// this file exists, need to update it
+	}
+	return nil
+}
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
 }

@@ -1,6 +1,7 @@
 package game
 
 import (
+	"encoding/binary"
 	"fmt"
 	"github.com/google/uuid"
 )
@@ -33,6 +34,7 @@ type Room struct {
 	Entry          RoomEntryPoint `json:"entry"`
 	Exit           RoomExitPoint  `json:"exit"`
 	IsStartingRoom bool           `json:"is_starting_room"`
+	isActive       bool           `json:"is_active"`
 }
 
 type RoomEntryPoint struct {
@@ -52,7 +54,7 @@ func (rep RoomEntryPoint) GetPassword() *string {
 func NewRoom(width, height int) *Room {
 	rid := uuid.New()
 	tiles := make([][]Tile, width)
-	for k, _ := range tiles {
+	for k := range tiles {
 		tiles[k] = make([]Tile, height)
 	}
 	return &Room{
@@ -82,4 +84,19 @@ func (room *Room) UpdateTile(x, y uint8, tile Tile) *Room {
 	)
 	room.Tiles[x][y] = tile
 	return room
+}
+
+// Get the current room as a byte slice
+func (room *Room) GetRoomByteData() (buffer []byte) {
+
+	// This has the same structure as the room data packet for the network protocol
+	sizeBuff := make([]byte, 2)
+
+	// Get the length of the room and put it in temp buffer and append it to the general buffer
+	binary.LittleEndian.PutUint16(sizeBuff, uint16(len(room.ID.String())))
+	buffer = append(buffer, sizeBuff...)
+	// Append the room id string to the buffer
+	buffer = append(buffer, []byte(room.ID.String())...)
+
+	return
 }
