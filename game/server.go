@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"net"
 	"os"
 	"path"
 	"time"
+
+	"github.com/Entrio/subenv"
+	"github.com/rs/zerolog/log"
 )
 
 var ServerInstance *Server
@@ -22,64 +24,44 @@ type Server struct {
 	packetHandler   map[PacketType]PacketHandler
 }
 
-type serverConfig struct {
-	ServerName      string `json:"server_name"`
-	ServerPort      int    `json:"server_port"`
-	PingConnections bool   `json:"ping_connections"`
-	RoomData        struct {
-		Config struct {
-			MinWidth  int `json:"min_width"`
-			MaxWidth  int `json:"max_width"`
-			MinHeight int `json:"min_height"`
-			MaxHeight int `json:"maxHeight"`
-		} `json:"config"`
-		MinRooms int `json:"min_rooms"`
-	} `json:"room_data"`
-}
-
-/**
-Get an existing instance of create a new one
-*/
+// GetServer returns an existing instance or creates a new one /**
 func GetServer() (*Server, error) {
 	if ServerInstance == nil {
+		log.Debug().Msg("No server instance initialized, creating a new one...")
 		handlers := make(map[PacketType]PacketHandler)
 
 		handlers[MsgUpdateRoomPayload] = RoomUpdateHandler{}
 		handlers[MsgRoomCountRequest] = RoomCountHandler{}
+
+		log.Debug().Int("count", len(handlers)).Msg("Total handlers")
 
 		ServerInstance = &Server{
 			connectionsList: make([]*Connection, 0),
 			roomList:        map[string]*Room{},
 			packetHandler:   handlers,
 		}
-
-		for key, value := range handlers {
-			fmt.Println("Key:", key, "Value:", value)
-		}
 	}
 
 	// Get current working directory
 	cwd, _ := os.Getwd()
-	fmt.Println(fmt.Sprintf("Setting working directory to: %s", cwd))
+	log.Debug().Str("cwd", cwd).Msg("Current directory")
 
 	dirs := checkDirectories(cwd)
 	config, err := checkServerConfig(dirs[0])
 
 	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to check directories")
 		return nil, err
 	}
 	ServerInstance.config = config
 
-	err = loadServerRooms(dirs[1])
-
-	if err != nil {
-		return nil, err
-	}
+	/*
+		err = loadServerRooms(dirs[1])
+		if err != nil {
+			return nil, err
+		}
+	*/
 	return ServerInstance, nil
-}
-
-func (server *Server) GetPort() int {
-	return server.config.ServerPort
 }
 
 func (server *Server) Start() {
@@ -100,6 +82,10 @@ func (server *Server) Start() {
 	}()
 }
 
+func (server *Server) GetPort() int {
+	return server.config.ServerPort
+}
+
 func (server *Server) GetName() string {
 	return server.config.ServerName
 }
@@ -117,70 +103,46 @@ func (server *Server) FindRoom(uuid string) *Room {
 }
 
 /**
-Handle player disconnects
-*/
-func (server *Server) onClientConnectionClosed(connection *Connection, err error) {
-	for i, conn := range server.connectionsList {
-		if conn == connection {
-			// bye bye, remove from the slice and reshuffle
-			server.connectionsList[i] = server.connectionsList[len(server.connectionsList)-1]
-			server.connectionsList[len(server.connectionsList)-1] = nil
-			server.connectionsList = server.connectionsList[:len(server.connectionsList)-1]
-			fmt.Println(fmt.Sprintf("Disconnect from from %s", connection.conn.RemoteAddr().String()))
-			break
-		}
-	}
-}
-
-/**
-New incoming connection
-*/
-func (server *Server) AddConnection(conn net.Conn) *Connection {
-	newConnection := &Connection{
-		conn:          conn,
-		timeConnected: time.Now(),
-		player:        nil,
-	}
-
-	server.connectionsList = append(server.connectionsList, newConnection)
-	go newConnection.listen()
-	welcomePacket := NewPacket(MsgWelcome)
-	welcomePacket.WriteString("Welcome to the super awesome server This is a server message!")
-	sendMessageToConnection(newConnection, *welcomePacket)
-	return newConnection
-}
-
-/**
 make sure that all of the required directories exist
 */
-func checkDirectories(p string) []string {
-	configPath := path.Join(p, "config")
-	dataPath := path.Join(p, "data")
+func checkDirectories(cwd string) []string {
+	var err error
+	configPath := path.Join(cwd, "config")
+	dataPath := path.Join(cwd, "data")
+	log.Trace().Str("data", dataPath).Str("config", configPath).Msg("Setting directories")
 
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		fmt.Println(fmt.Sprintf("Creating config directory: %s", configPath))
-		os.Mkdir(configPath, 0777)
+	if _, err = os.Stat(configPath); os.IsNotExist(err) {
+		log.Debug().Str("config", configPath).Msg("Config path does not exist, creating...")
+		err = os.Mkdir(configPath, 0777)
+		if err != nil {
+			log.Warn().Err(err).Msg("Failed to create config path")
+		}
 	}
 
-	if _, err := os.Stat(dataPath); os.IsNotExist(err) {
-		fmt.Println(fmt.Sprintf("Creating data directory: %s", dataPath))
-		os.Mkdir(dataPath, 0777)
+	if _, err = os.Stat(dataPath); os.IsNotExist(err) {
+		log.Debug().Str("data", dataPath).Msg("Data path does not exist, creating...")
+		err = os.Mkdir(dataPath, 0777)
+
+		if err != nil {
+			log.Warn().Err(err).Msg("Failed to create data path")
+		}
 	}
+	log.Debug().Msg("Created data and config paths successfully")
 	return []string{
 		configPath,
 		dataPath,
 	}
 }
 
-/**
-Create a default config and then read it (or existing file if it exists)
-*/
+// checkServerConfig creates a default config and then read it (or existing file if it exists)
 func checkServerConfig(configPath string) (*serverConfig, error) {
-	configFilePath := path.Join(configPath, "server.json")
+	var err error
+	configFilePath := path.Join(configPath, subenv.Env("SERVER_CONFIG", "server.json"))
+	log.Trace().Str("server_config", subenv.Env("SERVER_CONFIG", "server.json")).Msg("Server config filename, use 'SERVER_CONFIG' environment variable to overwrite")
 
-	_, err := os.Stat(configFilePath)
+	_, err = os.Stat(configFilePath)
 	if os.IsNotExist(err) {
-		fmt.Println(fmt.Sprintf("Creating new config file: %s", configFilePath))
+		log.Info().Msg("Server config file does not exist, creating a new one")
 
 		// Create default config file...
 		conf := serverConfig{
@@ -212,20 +174,24 @@ func checkServerConfig(configPath string) (*serverConfig, error) {
 		}
 
 		jData, _ := json.MarshalIndent(conf, "", " ")
-		err := ioutil.WriteFile(configFilePath, jData, 0666)
+		err = ioutil.WriteFile(configFilePath, jData, 0666)
 		if err != nil {
-			return nil, err
+			log.Warn().Err(err).Msg("Failed to write config file to disk")
 		}
-		fmt.Println(fmt.Sprintf("Default config saved as %s", configFilePath))
+		log.Info().Str("filepath", configFilePath).Msg("Created config file successfully")
+		log.Trace().Str("data", string(jData)).Msg("Server config")
 	}
 
 	if fData, err := ioutil.ReadFile(configFilePath); err != nil {
+		log.Warn().Err(err).Msg("Failed to read config file from disk")
 		return nil, err
 	} else {
 		fConfig := &serverConfig{}
 		if err := json.Unmarshal(fData, fConfig); err != nil {
+			log.Warn().Err(err).Msg("failed to unmarshal json data")
 			return nil, err
 		}
+		log.Debug().Msg("Returning server config")
 		return fConfig, nil
 	}
 }

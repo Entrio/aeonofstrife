@@ -2,8 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/Entrio/aeonofstrife/game"
 	"net"
+	"os"
+
+	"github.com/Entrio/aeonofstrife/game"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -15,11 +19,16 @@ var (
 @author Alexander Titarenko <westal@gmail.com>
 */
 func main() {
-	server, err := game.GetServer()
+
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
+
+	var err error
+
+	s, err = game.GetServer()
 	if err != nil {
 		panic(err)
 	}
-	s = server
 
 	port := fmt.Sprintf("0.0.0.0:%d", s.GetPort())
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", port)
