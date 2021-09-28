@@ -33,14 +33,19 @@ func main() {
 	port := fmt.Sprintf("0.0.0.0:%d", s.GetPort())
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", port)
 	if err != nil {
-		panic(err)
+		log.Fatal().Err(err).Msg("Failed to resolve TCP address")
 	}
 
 	listener, err := net.ListenTCP("tcp", tcpAddr)
 	if err != nil {
-		panic(err)
+		log.Fatal().Err(err).Msg("Failed to listen on interface")
 	}
-	defer listener.Close()
+	defer func() {
+		err = listener.Close()
+		if err != nil {
+			log.Warn().Err(err).Msg("Failed to close listeners")
+		}
+	}()
 
 	s.Start()
 	fmt.Println(fmt.Sprintf("Server started on port %s", listener.Addr().String()))

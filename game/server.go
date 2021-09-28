@@ -16,13 +16,19 @@ import (
 
 var ServerInstance *Server
 
-type Server struct {
-	connectionsList []*Connection
-	roomList        map[string]*Room
-	ticker          *time.Ticker
-	config          *serverConfig
-	packetHandler   map[PacketType]PacketHandler
-}
+type (
+	Server struct {
+		gameLoop        gameLoop
+		connectionsList []*Connection
+		roomList        map[string]*Room
+		ticker          *time.Ticker
+		config          *serverConfig
+		packetHandler   map[PacketType]PacketHandler
+	}
+	gameLoop struct {
+		ticker *time.Ticker
+	}
+)
 
 // GetServer returns an existing instance or creates a new one /**
 func GetServer() (*Server, error) {
@@ -64,10 +70,25 @@ func GetServer() (*Server, error) {
 	return ServerInstance, nil
 }
 
+// Start creates a new ticked and launched a goroutine the periodically pings clients and performs game loop
 func (server *Server) Start() {
+	log.Info().Msg("Starting server game loop and ping goroutines")
 	server.ticker = time.NewTicker(time.Millisecond * 3000)
+	if &server.gameLoop == nil {
+		log.Debug().Msg("Creating new game loop")
+		server.gameLoop = gameLoop{
+			ticker: time.NewTicker(time.Millisecond * 33),
+		}
+	}
+	go func() {
+		log.Info().Msg("Starting game loop")
+		for range server.gameLoop.ticker.C {
+			// Do game loop login and handlers here
+		}
+	}()
 
 	go func() {
+		log.Debug().Msg("Starting ping goroutine")
 		for range server.ticker.C {
 			pkt := NewPacket(MsgPingRequest)
 
@@ -90,9 +111,7 @@ func (server *Server) GetName() string {
 	return server.config.ServerName
 }
 
-/**
-Find a room based on UUID string
-*/
+// FindRoom fetches a room based on UUID string
 func (server *Server) FindRoom(uuid string) *Room {
 
 	if r, found := server.roomList[uuid]; found {
@@ -102,9 +121,7 @@ func (server *Server) FindRoom(uuid string) *Room {
 	return nil
 }
 
-/**
-make sure that all of the required directories exist
-*/
+// checkDirectories makes sure that all of the required directories exist
 func checkDirectories(cwd string) []string {
 	var err error
 	configPath := path.Join(cwd, "config")
