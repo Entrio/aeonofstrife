@@ -30,7 +30,7 @@ func main() {
 		panic(err)
 	}
 
-	port := fmt.Sprintf("0.0.0.0:%d", s.GetPort())
+	port := fmt.Sprintf("%s:%d", s.GetAddress(), s.GetPort())
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", port)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to resolve TCP address")
@@ -48,15 +48,17 @@ func main() {
 	}()
 
 	s.Start()
-	fmt.Println(fmt.Sprintf("Server started on port %s", listener.Addr().String()))
+	log.Info().Str("address", listener.Addr().String()).Msg("Server started")
 	listenForConnections(listener)
 
 }
 
 func listenForConnections(listener *net.TCPListener) {
+	log.Debug().Msg("TCP Listener now is listening for connections")
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
+			log.Warn().Err(err).Msg("Failed to accept connection")
 			continue
 		}
 		newDescriptor(conn)
@@ -64,6 +66,6 @@ func listenForConnections(listener *net.TCPListener) {
 }
 
 func newDescriptor(connection net.Conn) {
-	fmt.Println(fmt.Sprintf("New connection from %s", connection.RemoteAddr().String()))
+	log.Info().Str("connection", connection.RemoteAddr().String()).Msg("Incoming network connection")
 	s.AddConnection(connection)
 }

@@ -74,11 +74,8 @@ func GetServer() (*Server, error) {
 func (server *Server) Start() {
 	log.Info().Msg("Starting server game loop and ping goroutines")
 	server.ticker = time.NewTicker(time.Millisecond * 3000)
-	if &server.gameLoop == nil {
-		log.Debug().Msg("Creating new game loop")
-		server.gameLoop = gameLoop{
-			ticker: time.NewTicker(time.Millisecond * 33),
-		}
+	server.gameLoop = gameLoop{
+		ticker: time.NewTicker(time.Millisecond * 33),
 	}
 	go func() {
 		log.Info().Msg("Starting game loop")
@@ -105,6 +102,9 @@ func (server *Server) Start() {
 
 func (server *Server) GetPort() int {
 	return server.config.ServerPort
+}
+func (server *Server) GetAddress() string {
+	return server.config.ServerAddress
 }
 
 func (server *Server) GetName() string {
@@ -165,6 +165,7 @@ func checkServerConfig(configPath string) (*serverConfig, error) {
 		conf := serverConfig{
 			ServerName:      "Default MUD server",
 			ServerPort:      1337,
+			ServerAddress:   "127.0.0.1",
 			PingConnections: false,
 			RoomData: struct {
 				Config struct {

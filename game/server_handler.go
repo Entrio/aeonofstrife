@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// AddConnection attempts to add a connection to the pool
 func (server *Server) AddConnection(conn net.Conn) *Connection {
 	newConnection := &Connection{
 		conn:          conn,

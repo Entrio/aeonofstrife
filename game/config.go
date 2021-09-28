@@ -3,6 +3,7 @@ package game
 type serverConfig struct {
 	ServerName      string `json:"server_name"`
 	ServerPort      int    `json:"server_port"`
+	ServerAddress   string `json:"server_address"`
 	PingConnections bool   `json:"ping_connections"`
 	RoomData        struct {
 		Config struct {
